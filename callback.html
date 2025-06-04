@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Authenticating...</title>
+  <script>
+    window.onload = function() {
+      // Get the access token from URL fragment
+      const hash = window.location.hash.substring(1);
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      
+      if (accessToken) {
+        // Store the token in localStorage
+        localStorage.setItem('spotify_access_token', accessToken);
+        // Redirect to the chat interface
+        window.location.href = 'chat.html';
+      } else {
+        // Handle authentication error
+        alert('Authentication failed. Please try again.');
+        window.location.href = 'index.html';
+      }
+    };
+  </script>
+</head>
+<body>
+  <p>Authenticating with Spotify...</p>
+</body>
+</html>
