@@ -5,7 +5,7 @@ if (!accessToken) {
 }
 
 // Initialize variables
-let player = null; // Changed to let since we'll reassign it
+let spotifyPlayer = null; // Changed to let since we'll reassign it
 let deviceId = null;
 const chatMessages = document.getElementById('chat-messages');
 const userInput = document.getElementById('user-input');
@@ -13,7 +13,7 @@ const sendButton = document.getElementById('send-button');
 
 // Define the Spotify Web Playback SDK ready function FIRST
 function initializeSpotifyPlayer() {
-  if (player) return; // Prevent duplicate initialization
+  if (spotifyPlayer) return; // Prevent duplicate initialization
 
   player = new Spotify.Player({
     name: 'Spotify AI Assistant',
@@ -57,7 +57,7 @@ function initializeSpotifyPlayer() {
   });
 
   // Not Connected handling
-  player.addListener('not_ready', ({ device_id }) => {
+  spotifyPlayer.addListener('not_ready', ({ device_id }) => {
     console.log('Device ID has gone offline', device_id);
     addMessage('Player disconnected. Trying to reconnect...', false);
   });
@@ -230,8 +230,8 @@ userInput.addEventListener('keypress', event => {
 
 // Player control handlers with error checking
 document.getElementById('play-pause')?.addEventListener('click', () => {
-  if (player) {
-    player.togglePlay().catch(error => {
+  if (spotifyPlayer) {
+    spotifyPlayer.togglePlay().catch(error => {
       console.error('Toggle play error:', error);
     });
   }
@@ -247,7 +247,7 @@ document.getElementById('skip')?.addEventListener('click', () => {
 
 // Add a check for player initialization
 function checkPlayerInitialization() {
-  if (!player && window.Spotify) {
+  if (!spotifyPlayer && window.Spotify) {
     initializeSpotifyPlayer();
   }
 }
