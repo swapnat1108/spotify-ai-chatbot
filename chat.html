@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spotify AI Music Assistant - Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <img src="spotify-logo.png" alt="Spotify Logo" class="logo">
+      <h1>Spotify AI Music Assistant</h1>
+    </div>
+    
+    <div class="chat-messages" id="chat-messages">
+      <div class="message bot">
+        <div class="message-content">
+          Hello! I'm your Spotify AI Music Assistant. What would you like to listen to today?
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-input">
+      <input type="text" id="user-input" placeholder="Ask me to play something...">
+      <button id="send-button">Send</button>
+    </div>
+    
+    <div class="player-controls">
+      <button id="play-pause">Play</button>
+      <button id="skip">Skip</button>
+      <div class="now-playing">
+        <img id="album-art" src="default-album.png" alt="Album Art">
+        <div class="track-info">
+          <div id="track-name">Not Playing</div>
+          <div id="artist-name"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
