@@ -185,3 +185,8 @@ document.getElementById('play-pause').addEventListener('click', () => {
 document.getElementById('skip').addEventListener('click', () => {
   player.nextTrack();
 });
+// Define the required function for Spotify Web Playback SDK
+window.onSpotifyWebPlaybackSDKReady = function() {
+  console.log("Spotify Web Playback SDK is ready");
+  // The SDK initialization will happen here once we have authentication
+};
