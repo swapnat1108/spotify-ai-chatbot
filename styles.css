@@ -1,0 +1,130 @@
+body {
+  font-family: 'Circular', Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #121212;
+  color: white;
+}
+
+.chat-container {
+  max-width: 800px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background-color: #1db954;
+  color: white;
+}
+
+.logo {
+  height: 30px;
+  margin-right: 10px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  background-color: #181818;
+}
+
+.message {
+  margin-bottom: 15px;
+  display: flex;
+}
+
+.message.user {
+  justify-content: flex-end;
+}
+
+.message-content {
+  padding: 10px 15px;
+  border-radius: 20px;
+  max-width: 70%;
+}
+
+.user .message-content {
+  background-color: #1db954;
+  color: white;
+}
+
+.bot .message-content {
+  background-color: #333;
+  color: white;
+}
+
+.chat-input {
+  display: flex;
+  padding: 15px;
+  background-color: #282828;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 20px;
+  background-color: #333;
+  color: white;
+}
+
+.chat-input button {
+  margin-left: 10px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 20px;
+  background-color: #1db954;
+  color: white;
+  cursor: pointer;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background-color: #282828;
+  border-top: 1px solid #333;
+}
+
+.player-controls button {
+  padding: 8px 15px;
+  margin-right: 10px;
+  border: none;
+  border-radius: 20px;
+  background-color: #1db954;
+  color: white;
+  cursor: pointer;
+}
+
+.now-playing {
+  display: flex;
+  align-items: center;
+  margin-left: 20px;
+  flex: 1;
+}
+
+#album-art {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+}
+
+#track-name {
+  font-weight: bold;
+}
+
+#artist-name {
+  font-size: 0.9em;
+  color: #b3b3b3;
+}
