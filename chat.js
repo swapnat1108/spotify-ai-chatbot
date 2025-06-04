@@ -99,22 +99,6 @@ function updatePlayerInfo(state) {
   }
 }
 
-// Add message to chat
-function addMessage(text, isUser) {
-  const messageDiv = document.createElement('div');
-  messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-  
-  const contentDiv = document.createElement('div');
-  contentDiv.className = 'message-content';
-  contentDiv.textContent = text;
-  
-  messageDiv.appendChild(contentDiv);
-  chatMessages.appendChild(messageDiv);
-  
-  // Scroll to bottom
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
 // Process user input
 async function processUserInput() {
   const text = userInput.value.trim();
