@@ -1456,6 +1456,28 @@
             // Check authentication
             checkAuth();
         });
+        // Spotify authentication configuration
+const clientId = 54cc45b87374449585152aedac126fdf; // Replace with your Spotify Client ID
+const redirectUri = 'https://swapnat1108.github.io/spotify-ai-chatbot/callback.html';
+
+// Add event listeners to the login and get started buttons
+document.querySelector('button:nth-of-type(1 )').addEventListener('click', authenticateWithSpotify);
+document.querySelector('button:nth-of-type(2)').addEventListener('click', authenticateWithSpotify);
+
+// Function to handle Spotify authentication
+function authenticateWithSpotify() {
+  const scopes = [
+    'user-read-private',
+    'user-read-email',
+    'user-modify-playback-state',
+    'user-read-playback-state',
+    'streaming'
+  ];
+  
+  // Redirect to Spotify authorization page
+  window.location.href = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri )}&scope=${encodeURIComponent(scopes.join(' '))}`;
+}
+
     </script>
 </body>
 </html>
