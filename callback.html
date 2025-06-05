@@ -3,7 +3,8 @@
 <head>
   <title>Authenticating...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="css/styles.css">
+  <!-- Use absolute paths for GitHub Pages -->
+  <link rel="stylesheet" href="/spotify-ai-chatbot/styles.css">
   <style>
     body {
       display: flex;
@@ -45,6 +46,24 @@
       color: #ff5252;
       margin-top: 20px;
     }
+
+    .login-button {
+      background-color: #1db954;
+      color: white;
+      border: none;
+      border-radius: 30px;
+      padding: 12px 24px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 20px;
+    }
+
+    .login-button:hover {
+      background-color: #1ed760;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -53,48 +72,96 @@
   <div class="loader"></div>
   <p class="message" id="status-message">Processing your login...</p>
   
-  <!-- Load scripts -->
-  <script src="js/common.js"></script>
-  <script src="js/auth.js"></script>
-  
+  <!-- Simplified authentication handling for GitHub Pages -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const statusMessage = document.getElementById('status-message');
       
-      // Handle the authentication callback
-      window.SpotifyAuth.handleCallback()
-        .then(success => {
-          if (success) {
-            statusMessage.textContent = 'Authentication successful! Redirecting...';
-            // Redirect to the chat interface
-            setTimeout(() => {
-              window.location.href = 'chat.html';
-            }, 1000);
-          } else {
-            showError('Authentication failed. Please try again.');
-          }
-        })
-        .catch(error => {
-          console.error('Authentication error:', error);
-          showError('An error occurred during authentication. Please try again.');
-        });
-      
-      function showError(message) {
-        statusMessage.textContent = message;
-        statusMessage.className = 'message error';
+      // Simple hash parsing for token-based auth
+      function getHashParams() {
+        const hashParams = {};
+        const hash = window.location.hash.substring(1);
+        const params = hash.split('&');
         
-        // Add a button to try again
-        const tryAgainButton = document.createElement('button');
-        tryAgainButton.textContent = 'Try Again';
-        tryAgainButton.className = 'login-button';
-        tryAgainButton.style.marginTop = '20px';
-        tryAgainButton.addEventListener('click', () => {
-          window.location.href = 'index.html';
-        });
+        for (let i = 0; i < params.length; i++) {
+          const pair = params[i].split('=');
+          hashParams[pair[0]] = decodeURIComponent(pair[1]);
+        }
         
-        document.body.appendChild(tryAgainButton);
+        return hashParams;
       }
+      
+      // Get URL parameters
+      const params = new URLSearchParams(window.location.search);
+      const hashParams = getHashParams();
+      
+      // Check for error
+      if (params.get('error')) {
+        showError('Authentication failed: ' + params.get('error'));
+        return;
+      }
+      
+      // Check for access token in hash (implicit grant)
+      if (hashParams.access_token) {
+        // Store the token
+        localStorage.setItem('spotify_access_token', hashParams.access_token);
+        
+        if (hashParams.expires_in) {
+          const expiresAt = Date.now() + (parseInt(hashParams.expires_in) * 1000);
+          localStorage.setItem('spotify_token_expires_at', expiresAt.toString());
+        }
+        
+        statusMessage.textContent = 'Authentication successful! Redirecting...';
+        
+        // Redirect to the chat interface
+        setTimeout(() => {
+          window.location.href = '/spotify-ai-chatbot/chat.html';
+        }, 1000);
+        
+        return;
+      }
+      
+      // Check for authorization code (authorization code flow)
+      const code = params.get('code');
+      if (code) {
+        // For GitHub Pages, we'll use a simplified approach
+        // In a real app, you would exchange this code for a token on your server
+        statusMessage.textContent = 'Authorization code received. Redirecting...';
+        
+        // Store the code temporarily
+        localStorage.setItem('spotify_auth_code', code);
+        
+        // Redirect to the chat interface
+        // The chat page should handle the code exchange
+        setTimeout(() => {
+          window.location.href = '/spotify-ai-chatbot/chat.html?code=' + code;
+        }, 1000);
+        
+        return;
+      }
+      
+      // If we get here, no valid auth data was found
+      showError('No authentication data received. Please try again.');
     });
+    
+    function showError(message) {
+      const statusMessage = document.getElementById('status-message');
+      statusMessage.textContent = message;
+      statusMessage.className = 'message error';
+      
+      // Hide loader
+      document.querySelector('.loader').style.display = 'none';
+      
+      // Add a button to try again
+      const tryAgainButton = document.createElement('button');
+      tryAgainButton.textContent = 'Try Again';
+      tryAgainButton.className = 'login-button';
+      tryAgainButton.addEventListener('click', () => {
+        window.location.href = '/spotify-ai-chatbot/index.html';
+      });
+      
+      document.body.appendChild(tryAgainButton);
+    }
   </script>
 </body>
 </html>
