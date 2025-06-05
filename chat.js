@@ -1,105 +1,44 @@
-// Check if user is authenticated
-const accessToken = localStorage.getItem('spotify_access_token');
-if (!accessToken) {
-  window.location.href = 'index.html';
-}
+/**
+ * Spotify AI Music Assistant - Chat Module
+ * Handles chat interface, user input, and AI responses
+ */
 
-// Initialize variables
-let spotifyPlayer = null; // Changed to let since we'll reassign it
-let deviceId = null;
+// DOM Elements
 const chatMessages = document.getElementById('chat-messages');
 const userInput = document.getElementById('user-input');
 const sendButton = document.getElementById('send-button');
 
-// Define the Spotify Web Playback SDK ready function FIRST
-function initializeSpotifyPlayer() {
-  if (spotifyPlayer) return; // Prevent duplicate initialization
+// Track the thinking message for removal
+let thinkingMessage = null;
 
-  player = new Spotify.Player({
-    name: 'Spotify AI Assistant',
-    getOAuthToken: cb => { cb(accessToken); },
-    volume: 0.5 // Added default volume
-  });
-
-  // Error handling
-  player.addListener('initialization_error', ({ message }) => { 
-    console.error('Initialization Error:', message);
-  });
+/**
+ * Initialize the chat interface
+ */
+function initializeChat() {
+  // Add welcome message
+  addMessage("Hello! I'm your Spotify AI Music Assistant. What would you like to listen to today?", false);
   
-  player.addListener('authentication_error', ({ message }) => { 
-    console.error('Auth Error:', message);
-    localStorage.removeItem('spotify_access_token');
-    window.location.href = 'index.html';
-  });
-  
-  player.addListener('account_error', ({ message }) => { 
-    console.error('Account Error:', message);
-  });
-  
-  player.addListener('playback_error', ({ message }) => { 
-    console.error('Playback Error:', message);
-  });
-
-  // Playback status updates
-  player.addListener('player_state_changed', state => {
-    console.log('Player State Changed:', state);
-    if (state) {
-      updatePlayerInfo(state);
+  // Set up event listeners
+  sendButton.addEventListener('click', processUserInput);
+  userInput.addEventListener('keypress', event => {
+    if (event.key === 'Enter') {
+      processUserInput();
     }
   });
-
-  // Ready event
-  player.addListener('ready', ({ device_id }) => {
-    console.log('Player Ready with Device ID:', device_id);
-    deviceId = device_id;
-    // Notify user player is ready
-    addMessage('Player is connected and ready!', false);
-  });
-
-  // Not Connected handling
-  spotifyPlayer.addListener('not_ready', ({ device_id }) => {
-    console.log('Device ID has gone offline', device_id);
-    addMessage('Player disconnected. Trying to reconnect...', false);
-  });
-
-  // Connect to the player
-  player.connect().then(success => {
-    if (success) {
-      console.log('Connected to Spotify successfully!');
-    }
+  
+  // Set up example query listeners if they exist
+  const exampleQueries = document.querySelectorAll('.example-query');
+  exampleQueries.forEach(query => {
+    query.addEventListener('click', () => {
+      userInput.value = query.textContent.replace(/"/g, '');
+      processUserInput();
+    });
   });
 }
 
-// Set up the global callback required by Spotify SDK
-window.onSpotifyWebPlaybackSDKReady = initializeSpotifyPlayer;
-
-// Update player information
-function updatePlayerInfo(state) {
-  if (!state?.track_window?.current_track) return;
-  
-  const track = state.track_window.current_track;
-  const elements = {
-    track: document.getElementById('track-name'),
-    artist: document.getElementById('artist-name'),
-    albumArt: document.getElementById('album-art'),
-    playPause: document.getElementById('play-pause')
-  };
-
-  if (elements.track) elements.track.textContent = track.name;
-  if (elements.artist) {
-    elements.artist.textContent = track.artists.map(artist => artist.name).join(', ');
-  }
-  if (elements.albumArt && track.album.images.length > 0) {
-    elements.albumArt.src = track.album.images[0].url;
-    elements.albumArt.alt = `${track.name} album art`;
-  }
-  if (elements.playPause) {
-    elements.playPause.textContent = state.paused ? 'Play' : 'Pause';
-    elements.playPause.title = state.paused ? 'Resume playback' : 'Pause playback';
-  }
-}
-
-// Process user input
+/**
+ * Process user input and generate response
+ */
 async function processUserInput() {
   const text = userInput.value.trim();
   if (!text) return;
@@ -109,30 +48,38 @@ async function processUserInput() {
   userInput.value = '';
   
   // Show thinking indicator
-  const thinkingMsg = addMessage('Thinking...', false);
+  showThinking();
   
   try {
-    // Call your AI backend here
-    const response = await mockAIResponse(text);
+    // Call AI response function
+    const response = await getAIResponse(text);
     
     // Remove thinking message
-    chatMessages.removeChild(thinkingMsg);
+    hideThinking();
     
     // Add AI response
     addMessage(response.message, false);
     
     // Handle playback if needed
     if (response.action === 'play' && response.trackUri) {
-      await playSong(response.trackUri);
+      const success = await window.SpotifyPlayer.playSong(response.trackUri);
+      if (!success) {
+        addMessage('I had trouble playing that track. Please make sure your Spotify account is active and try again.', false);
+      }
     }
   } catch (error) {
     console.error('Error processing request:', error);
-    chatMessages.removeChild(thinkingMsg);
+    hideThinking();
     addMessage('Sorry, I encountered an error. Please try again.', false);
   }
 }
 
-// Modified addMessage to return the element for later removal
+/**
+ * Add a message to the chat interface
+ * @param {string} text - Message text
+ * @param {boolean} isUser - Whether the message is from the user
+ * @returns {HTMLElement} The message element
+ */
 function addMessage(text, isUser) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
@@ -141,15 +88,57 @@ function addMessage(text, isUser) {
   contentDiv.className = 'message-content';
   contentDiv.textContent = text;
   
+  // Add timestamp
+  const timestamp = document.createElement('div');
+  timestamp.className = 'message-time';
+  timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
   messageDiv.appendChild(contentDiv);
+  messageDiv.appendChild(timestamp);
   chatMessages.appendChild(messageDiv);
+  
+  // Scroll to bottom
   chatMessages.scrollTop = chatMessages.scrollHeight;
   
   return messageDiv;
 }
 
-// Mock AI response (replace with actual AI integration)
-async function mockAIResponse(text) {
+/**
+ * Show thinking indicator
+ */
+function showThinking() {
+  thinkingMessage = addMessage('Thinking...', false);
+  
+  // Remove timestamp from thinking message
+  const timestamp = thinkingMessage.querySelector('.message-time');
+  if (timestamp) {
+    timestamp.remove();
+  }
+  
+  // Add animated dots
+  const content = thinkingMessage.querySelector('.message-content');
+  content.innerHTML = 'Thinking<span class="typing-indicator"><span></span><span></span><span></span></span>';
+}
+
+/**
+ * Hide thinking indicator
+ */
+function hideThinking() {
+  if (thinkingMessage && thinkingMessage.parentNode) {
+    chatMessages.removeChild(thinkingMessage);
+    thinkingMessage = null;
+  }
+}
+
+/**
+ * Get AI response to user input
+ * @param {string} text - User input text
+ * @returns {Promise<Object>} AI response object
+ */
+async function getAIResponse(text) {
+  // For demo purposes, using a mock response
+  // In a real application, this would call an AI service
+  
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
@@ -180,82 +169,60 @@ async function mockAIResponse(text) {
       action: 'play',
       trackUri: 'spotify:playlist:37i9dQZF1DX76Wlfdnj7AP'
     };
-  } else {
+  } else if (lowerText.includes('help') || lowerText.includes('what can you do')) {
     return {
-      message: 'I\'m not sure what you\'re looking for. Try asking for a specific genre, mood, or activity.',
+      message: 'I can help you find and play music on Spotify. Try asking for music by mood (like "happy" or "relaxing"), activity (like "studying" or "workout"), genre (like "jazz" or "rock"), or specific artists and songs.',
+      action: 'none'
+    };
+  } else {
+    // Search for music based on the query
+    return {
+      message: `I'll look for "${text}" on Spotify. You can also try being more specific about genres, moods, or activities.`,
       action: 'none'
     };
   }
 }
 
-// Improved playSong function with better error handling
-async function playSong(uri) {
-  if (!deviceId) {
-    addMessage('Playback device not ready. Please try again in a moment.', false);
-    return false;
+/**
+ * Update player UI with current track information
+ * @param {Object} trackInfo - Track information object
+ */
+function updatePlayerUI(trackInfo) {
+  const trackName = document.getElementById('track-name');
+  const artistName = document.getElementById('artist-name');
+  const albumArt = document.getElementById('album-art');
+  const playPauseButton = document.getElementById('play-pause');
+  
+  if (!trackInfo || !trackInfo.track) {
+    // Reset to default state if no track
+    if (trackName) trackName.textContent = 'Not Playing';
+    if (artistName) artistName.textContent = '';
+    if (albumArt) albumArt.src = 'default-album.png';
+    if (playPauseButton) playPauseButton.textContent = 'Play';
+    return;
   }
   
-  try {
-    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        uris: uri.startsWith('spotify:track') ? [uri] : undefined,
-        context_uri: uri.startsWith('spotify:playlist') ? uri : undefined
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error playing track:', error);
-    addMessage('Sorry, I couldn\'t play that track. Please try again.', false);
-    return false;
+  const track = trackInfo.track;
+  
+  if (trackName) trackName.textContent = track.name;
+  
+  if (artistName) {
+    artistName.textContent = track.artists.map(artist => artist.name).join(', ');
+  }
+  
+  if (albumArt && track.album.images.length > 0) {
+    albumArt.src = track.album.images[0].url;
+    albumArt.alt = `${track.name} album art`;
+  }
+  
+  if (playPauseButton) {
+    playPauseButton.textContent = trackInfo.isPlaying ? 'Pause' : 'Play';
   }
 }
 
-// Event listeners
-sendButton.addEventListener('click', processUserInput);
-userInput.addEventListener('keypress', event => {
-  if (event.key === 'Enter') {
-    processUserInput();
-  }
-});
-
-// Player control handlers with error checking
-document.getElementById('play-pause')?.addEventListener('click', () => {
-  if (spotifyPlayer) {
-    spotifyPlayer.togglePlay().catch(error => {
-      console.error('Toggle play error:', error);
-    });
-  }
-});
-
-document.getElementById('skip')?.addEventListener('click', () => {
-  if (player) {
-    player.nextTrack().catch(error => {
-      console.error('Skip track error:', error);
-    });
-  }
-});
-
-// Add a check for player initialization
-function checkPlayerInitialization() {
-  if (!spotifyPlayer && window.Spotify) {
-    initializeSpotifyPlayer();
-  }
-}
-
-// Periodically check for SDK availability (fallback)
-const initializationCheck = setInterval(() => {
-  if (window.Spotify) {
-    initializeSpotifyPlayer();
-    clearInterval(initializationCheck);
-  }
-}, 500);
+// Export functions for use in other modules
+window.SpotifyChat = {
+  initializeChat,
+  addMessage,
+  updatePlayerUI
+};
