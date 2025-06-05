@@ -2,27 +2,99 @@
 <html>
 <head>
   <title>Authenticating...</title>
-  <script>
-    window.onload = function() {
-      // Get the access token from URL fragment
-      const hash = window.location.hash.substring(1);
-      const params = new URLSearchParams(hash);
-      const accessToken = params.get('access_token');
-      
-      if (accessToken) {
-        // Store the token in localStorage
-        localStorage.setItem('spotify_access_token', accessToken);
-        // Redirect to the chat interface
-        window.location.href = 'chat.html';
-      } else {
-        // Handle authentication error
-        alert('Authentication failed. Please try again.');
-        window.location.href = 'index.html';
-      }
-    };
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      background-color: #121212;
+      color: white;
+    }
+    
+    .loader {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top: 4px solid #1DB954;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .logo {
+      max-width: 200px;
+      margin-bottom: 30px;
+    }
+    
+    .message {
+      font-family: 'Circular', Helvetica, Arial, sans-serif;
+      margin-top: 20px;
+    }
+    
+    .error {
+      color: #ff5252;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <p>Authenticating with Spotify...</p>
+  <img class="logo" src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_Green.png" alt="Spotify Logo">
+  <h1>Authenticating with Spotify</h1>
+  <div class="loader"></div>
+  <p class="message" id="status-message">Processing your login...</p>
+  
+  <!-- Load scripts -->
+  <script src="js/common.js"></script>
+  <script src="js/auth.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const statusMessage = document.getElementById('status-message');
+      
+      // Handle the authentication callback
+      window.SpotifyAuth.handleCallback()
+        .then(success => {
+          if (success) {
+            statusMessage.textContent = 'Authentication successful! Redirecting...';
+            // Redirect to the chat interface
+            setTimeout(() => {
+              window.location.href = 'chat.html';
+            }, 1000);
+          } else {
+            showError('Authentication failed. Please try again.');
+          }
+        })
+        .catch(error => {
+          console.error('Authentication error:', error);
+          showError('An error occurred during authentication. Please try again.');
+        });
+      
+      function showError(message) {
+        statusMessage.textContent = message;
+        statusMessage.className = 'message error';
+        
+        // Add a button to try again
+        const tryAgainButton = document.createElement('button');
+        tryAgainButton.textContent = 'Try Again';
+        tryAgainButton.className = 'login-button';
+        tryAgainButton.style.marginTop = '20px';
+        tryAgainButton.addEventListener('click', () => {
+          window.location.href = 'index.html';
+        });
+        
+        document.body.appendChild(tryAgainButton);
+      }
+    });
+  </script>
 </body>
 </html>
