@@ -5,46 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Spotify AI Music Assistant</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        /* CSS styles remain unchanged */
-        :root {
-            --spotify-green: #1DB954;
-            --spotify-black: #191414;
-            --spotify-white: #FFFFFF;
-            --spotify-gray: #535353;
-            --spotify-light-gray: #B3B3B3;
-            --chat-bg: #121212;
-            --message-user-bg: #333333;
-            --message-bot-bg: #1DB954;
-            --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* Rest of the CSS styles... */
-    </style>
+    <link rel="stylesheet" href="css/styles.css">
     
     <!-- Define the Spotify Web Playback SDK ready function FIRST -->
     <script>
         // Global callback for Spotify Web Playback SDK
         window.onSpotifyWebPlaybackSDKReady = function() {
             console.log('Spotify Web Playback SDK Ready');
-            // If player initialization function exists, call it
-            if (typeof initializePlayer === 'function') {
-                initializePlayer();
+            // Initialize player if available
+            if (window.SpotifyPlayer && typeof window.SpotifyPlayer.initializePlayer === 'function') {
+                window.SpotifyPlayer.initializePlayer();
             } else {
-                console.error('initializePlayer function not defined when SDK loaded');
+                console.error('SpotifyPlayer.initializePlayer function not defined when SDK loaded');
             }
         };
     </script>
-    
-    <!-- Load the Spotify Web Playback SDK AFTER defining the callback -->
-    <script src="https://sdk.scdn.co/spotify-player.js"></script>
 </head>
 <body>
     <div class="playback-status" id="playback-status">
@@ -52,7 +27,6 @@
     </div>
     
     <div class="container">
-        <!-- HTML content remains unchanged -->
         <div class="header">
             <div class="logo">
                 <img src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_Green.png" alt="Spotify Logo">
@@ -69,118 +43,291 @@
             </div>
         </div>
 
-        <!-- Rest of the HTML content... -->
+        <div class="main-content">
+            <!-- Welcome Screen (shown before login) -->
+            <div id="welcome-screen" class="welcome-screen">
+                <img class="welcome-logo" src="https://storage.googleapis.com/pr-newsroom-wp/1/2018/11/Spotify_Logo_RGB_Green.png" alt="Spotify Logo">
+                <h1 class="welcome-title">Spotify AI Music Assistant</h1>
+                <p class="welcome-subtitle">Your personal AI-powered music companion. Just chat naturally to discover and play music.</p>
+                
+                <div class="welcome-features">
+                    <div class="feature">
+                        <div class="feature-icon">
+                            <i class="fas fa-comment-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Natural Conversation</h3>
+                        <p class="feature-desc">Chat about your music preferences</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <h3 class="feature-title">Smart Discovery</h3>
+                        <p class="feature-desc">Find perfect music for any mood</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3 class="feature-title">Learns Your Taste</h3>
+                        <p class="feature-desc">Gets better over time</p>
+                    </div>
+                </div>
+                
+                <button id="welcome-login-button" class="login-button">
+                    <i class="fab fa-spotify"></i> Get Started with Spotify
+                </button>
+                
+                <div class="example-queries">
+                    <h3 class="example-title">Try asking for:</h3>
+                    <div class="example-list">
+                        <div class="example-query">"Play some relaxing jazz for studying"</div>
+                        <div class="example-query">"I want 90s Bollywood romantic songs"</div>
+                        <div class="example-query">"Find me a playlist for deep focus"</div>
+                        <div class="example-query">"Play something upbeat for working out"</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Interface (shown after login) -->
+            <div id="chat-interface" class="chat-area" style="display: none;">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Messages will be added here dynamically -->
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="user-input" placeholder="Ask me to play some music..." autocomplete="off">
+                    <button id="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player (shown after login) -->
+        <div id="player" class="player" style="display: none;">
+            <div class="now-playing">
+                <div class="album-art">
+                    <img id="album-image" src="https://i.scdn.co/image/ab67616d0000b273c5649add07ed3720be9d5526" alt="Album Art">
+                </div>
+                <div class="track-info">
+                    <div id="track-name" class="track-name">Not Playing</div>
+                    <div id="artist-name" class="artist-name">-</div>
+                </div>
+            </div>
+            <div class="player-controls">
+                <button class="control-button" id="prev-button">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button class="control-button play-pause" id="play-pause-button">
+                    <i class="fas fa-play" id="play-icon"></i>
+                </button>
+                <button class="control-button" id="next-button">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+                <button class="control-button" id="device-button">
+                    <i class="fas fa-mobile-alt"></i>
+                </button>
+            </div>
+            <div class="volume-control">
+                <div class="volume-icon">
+                    <i class="fas fa-volume-up"></i>
+                </div>
+                <input type="range" min="0" max="100" value="50" class="volume-slider" id="volume-slider">
+            </div>
+        </div>
+        
+        <!-- Device Selector -->
+        <div class="device-selector" id="device-selector">
+            <div class="device-selector-title">Select Playback Device</div>
+            <div class="device-list" id="device-list">
+                <!-- Devices will be populated here -->
+            </div>
+            <button class="device-selector-close" id="device-selector-close">Close</button>
+        </div>
     </div>
 
+    <!-- Load scripts in the correct order -->
+    <script src="js/common.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/chat.js"></script>
+    
+    <!-- Load the Spotify Web Playback SDK AFTER our scripts -->
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    
     <script>
-        // DOM Elements
-        const loginButton = document.getElementById('login-button');
-        const welcomeLoginButton = document.getElementById('welcome-login-button');
-        const welcomeScreen = document.getElementById('welcome-screen');
-        const chatInterface = document.getElementById('chat-interface');
-        const player = document.getElementById('player');
-        const userInfo = document.getElementById('user-info');
-        const userAvatar = document.getElementById('user-avatar');
-        const userName = document.getElementById('user-name');
-        const chatMessages = document.getElementById('chat-messages');
-        const messageInput = document.getElementById('message-input');
-        const sendButton = document.getElementById('send-button');
-        const exampleQueries = document.querySelectorAll('.example-query');
-        const playbackStatus = document.getElementById('playback-status');
-        const deviceSelector = document.getElementById('device-selector');
-        const deviceList = document.getElementById('device-list');
-        const deviceButton = document.getElementById('device-button');
-        const deviceSelectorClose = document.getElementById('device-selector-close');
-        
-        // Spotify API Configuration
-        const clientId = '54cc45b87374449585152aedac126fdf'; // User's Spotify Client ID
-        const redirectUri = window.location.origin + window.location.pathname;
-        const scopes = [
-            'user-read-private',
-            'user-read-email',
-            'user-read-playback-state',
-            'user-modify-playback-state',
-            'user-read-currently-playing',
-            'playlist-read-private',
-            'playlist-read-collaborative',
-            'user-library-read',
-            'user-top-read',
-            'user-read-recently-played',
-            'streaming'
-        ];
-
-        // Global variables
-        let accessToken = null;
-        let spotifyPlayer = null; // Changed variable name to avoid conflict
-        let deviceId = null;
-        let availableDevices = [];
-        let currentTrack = null;
-        let isPlaying = false;
-
-        // Spotify Authentication
-        function generateRandomString(length) {
-            let text = '';
-            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            for (let i = 0; i < length; i++) {
-                text += possible.charAt(Math.floor(Math.random() * possible.length));
-            }
-            return text;
-        }
-
-        // Rest of the JavaScript functions...
-
-        // Modified Spotify Web Playback SDK initialization
-        function initializePlayer() {
-            if (!window.Spotify) {
-                console.error('Spotify Web Playback SDK not loaded');
-                showPlaybackStatus('Spotify Web Playback SDK failed to load', 'error');
-                return;
-            }
-            
-            spotifyPlayer = new Spotify.Player({
-                name: 'Spotify AI Music Assistant',
-                getOAuthToken: cb => { cb(accessToken); },
-                volume: 0.5
-            });
-            
-            // Error handling
-            spotifyPlayer.addListener('initialization_error', ({ message }) => {
-                console.error('Initialization error:', message);
-                showPlaybackStatus('Player initialization failed: ' + message, 'error');
-            });
-            
-            spotifyPlayer.addListener('authentication_error', ({ message }) => {
-                console.error('Authentication error:', message);
-                showPlaybackStatus('Authentication error: ' + message, 'error');
-                
-                // Try to refresh the token
-                refreshToken().then(success => {
-                    if (success) {
-                        // Reinitialize player with new token
-                        spotifyPlayer.disconnect();
-                        initializePlayer();
-                    }
-                });
-            });
-            
-            // Rest of the player event listeners...
-            
-            // Connect to the player
-            spotifyPlayer.connect();
-        }
-
-        // Rest of the JavaScript code...
-
-        // Initialize on page load
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            // Check authentication status
-            checkAuth();
+            // Set up login buttons
+            const loginButton = document.getElementById('login-button');
+            const welcomeLoginButton = document.getElementById('welcome-login-button');
             
-            // Set up event listeners
-            loginButton.addEventListener('click', login);
-            welcomeLoginButton.addEventListener('click', login);
-            // Rest of the event listeners...
+            if (loginButton) {
+                loginButton.addEventListener('click', window.SpotifyAuth.login);
+            }
+            
+            if (welcomeLoginButton) {
+                welcomeLoginButton.addEventListener('click', window.SpotifyAuth.login);
+            }
+            
+            // Check authentication status
+            window.SpotifyAuth.checkAuth().then(isAuthenticated => {
+                if (isAuthenticated) {
+                    showAuthenticatedUI();
+                }
+            });
+            
+            // Set up player controls
+            setupPlayerControls();
         });
+        
+        // Show authenticated UI
+        async function showAuthenticatedUI() {
+            // Hide welcome screen, show chat interface
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const chatInterface = document.getElementById('chat-interface');
+            const player = document.getElementById('player');
+            
+            if (welcomeScreen) welcomeScreen.style.display = 'none';
+            if (chatInterface) chatInterface.style.display = 'flex';
+            if (player) player.style.display = 'flex';
+            
+            // Update user profile
+            const profile = await window.SpotifyAuth.getUserProfile();
+            if (profile) {
+                const userInfo = document.getElementById('user-info');
+                const userAvatar = document.getElementById('user-avatar');
+                const userName = document.getElementById('user-name');
+                
+                if (userInfo) userInfo.style.display = 'flex';
+                if (loginButton) loginButton.style.display = 'none';
+                
+                if (userAvatar) {
+                    if (profile.images && profile.images.length > 0) {
+                        userAvatar.src = profile.images[0].url;
+                    } else {
+                        userAvatar.src = 'https://via.placeholder.com/40?text=' + profile.display_name.charAt(0);
+                    }
+                }
+                
+                if (userName) {
+                    userName.textContent = profile.display_name;
+                }
+            }
+            
+            // Initialize player
+            window.SpotifyPlayer.initializePlayer();
+            
+            // Initialize chat
+            window.SpotifyChat.initializeChat();
+            
+            // Register player state callback
+            window.SpotifyPlayer.registerCallback('onPlayerStateChanged', window.SpotifyChat.updatePlayerUI);
+        }
+        
+        // Set up player controls
+        function setupPlayerControls() {
+            const playPauseButton = document.getElementById('play-pause-button');
+            const prevButton = document.getElementById('prev-button');
+            const nextButton = document.getElementById('next-button');
+            const volumeSlider = document.getElementById('volume-slider');
+            const deviceButton = document.getElementById('device-button');
+            const deviceSelector = document.getElementById('device-selector');
+            const deviceSelectorClose = document.getElementById('device-selector-close');
+            
+            // Play/Pause button
+            if (playPauseButton) {
+                playPauseButton.addEventListener('click', () => {
+                    window.SpotifyPlayer.togglePlay().catch(error => {
+                        console.error('Toggle play error:', error);
+                    });
+                });
+            }
+            
+            // Previous track button
+            if (prevButton) {
+                prevButton.addEventListener('click', () => {
+                    window.SpotifyPlayer.previousTrack().catch(error => {
+                        console.error('Previous track error:', error);
+                    });
+                });
+            }
+            
+            // Next track button
+            if (nextButton) {
+                nextButton.addEventListener('click', () => {
+                    window.SpotifyPlayer.nextTrack().catch(error => {
+                        console.error('Next track error:', error);
+                    });
+                });
+            }
+            
+            // Volume slider
+            if (volumeSlider) {
+                volumeSlider.addEventListener('input', () => {
+                    const volume = parseInt(volumeSlider.value) / 100;
+                    window.SpotifyPlayer.setVolume(volume);
+                });
+            }
+            
+            // Device selector
+            if (deviceButton && deviceSelector) {
+                deviceButton.addEventListener('click', async () => {
+                    // Get available devices
+                    const devices = await window.SpotifyPlayer.getAvailableDevices();
+                    
+                    // Update device list
+                    const deviceList = document.getElementById('device-list');
+                    if (deviceList) {
+                        deviceList.innerHTML = '';
+                        
+                        devices.forEach(device => {
+                            const deviceItem = document.createElement('div');
+                            deviceItem.className = 'device-item';
+                            if (device.id === window.SpotifyPlayer.getDeviceId()) {
+                                deviceItem.classList.add('active');
+                            }
+                            
+                            const deviceIcon = document.createElement('div');
+                            deviceIcon.className = 'device-icon';
+                            
+                            // Choose icon based on device type
+                            let iconClass = 'fas fa-question';
+                            if (device.type === 'Computer') iconClass = 'fas fa-laptop';
+                            else if (device.type === 'Smartphone') iconClass = 'fas fa-mobile-alt';
+                            else if (device.type === 'Speaker') iconClass = 'fas fa-volume-up';
+                            
+                            deviceIcon.innerHTML = `<i class="${iconClass}"></i>`;
+                            
+                            const deviceName = document.createElement('div');
+                            deviceName.className = 'device-name';
+                            deviceName.textContent = device.name;
+                            
+                            deviceItem.appendChild(deviceIcon);
+                            deviceItem.appendChild(deviceName);
+                            
+                            // Add click handler to transfer playback
+                            deviceItem.addEventListener('click', () => {
+                                window.SpotifyPlayer.transferPlayback(device.id);
+                                deviceSelector.classList.remove('active');
+                            });
+                            
+                            deviceList.appendChild(deviceItem);
+                        });
+                    }
+                    
+                    // Show device selector
+                    deviceSelector.classList.add('active');
+                });
+            }
+            
+            // Close device selector
+            if (deviceSelectorClose && deviceSelector) {
+                deviceSelectorClose.addEventListener('click', () => {
+                    deviceSelector.classList.remove('active');
+                });
+            }
+        }
     </script>
 </body>
 </html>
