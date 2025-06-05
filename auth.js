@@ -1,11 +1,12 @@
 /**
- * Spotify AI Music Assistant - Authentication Module
+ * Spotify AI Music Assistant - Authentication Module for GitHub Pages
  * Handles Spotify authentication, token management, and authorization flow
  */
 
 // Configuration
 const clientId = '54cc45b87374449585152aedac126fdf';
-const redirectUri = window.location.origin + '/callback.html';
+// Use the full GitHub Pages URL for the redirect
+const redirectUri = 'https://swapnat1108.github.io/spotify-ai-chatbot/callback.html';
 const scopes = [
   'user-read-private',
   'user-read-email',
@@ -59,103 +60,25 @@ async function generateCodeChallenge(codeVerifier) {
 
 /**
  * Initiate the Spotify authorization flow
+ * For GitHub Pages, we'll use the implicit grant flow
  */
-async function login() {
-  // Generate and store state and code verifier
+function login() {
+  // Generate state for CSRF protection
   const state = generateRandomString(16);
-  const codeVerifier = generateRandomString(64);
-  const codeChallenge = await generateCodeChallenge(codeVerifier);
-  
-  // Store the code verifier and state in localStorage for later use
-  localStorage.setItem(CODE_VERIFIER_KEY, codeVerifier);
   localStorage.setItem(STATE_KEY, state);
   
-  // Construct the authorization URL
+  // Construct the authorization URL for implicit grant
   const authUrl = new URL('https://accounts.spotify.com/authorize');
   const params = {
     client_id: clientId,
-    response_type: 'code',
+    response_type: 'token',
     redirect_uri: redirectUri,
-    code_challenge_method: 'S256',
-    code_challenge: codeChallenge,
     state: state,
     scope: scopes.join(' ')
   };
   
   authUrl.search = new URLSearchParams(params).toString();
   window.location.href = authUrl.toString();
-}
-
-/**
- * Handle the callback from Spotify authorization
- * @returns {Promise<boolean>} Success status
- */
-async function handleCallback() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  const state = urlParams.get('state');
-  const storedState = localStorage.getItem(STATE_KEY);
-  
-  // Verify state to prevent CSRF attacks
-  if (!state || state !== storedState) {
-    console.error('State mismatch');
-    return false;
-  }
-  
-  if (code) {
-    try {
-      // Exchange the code for an access token
-      const codeVerifier = localStorage.getItem(CODE_VERIFIER_KEY);
-      
-      const response = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-          client_id: clientId,
-          grant_type: 'authorization_code',
-          code: code,
-          redirect_uri: redirectUri,
-          code_verifier: codeVerifier
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('HTTP status ' + response.status);
-      }
-      
-      const data = await response.json();
-      
-      // Store tokens and expiration
-      storeTokens(data);
-      
-      // Clean up
-      localStorage.removeItem(CODE_VERIFIER_KEY);
-      localStorage.removeItem(STATE_KEY);
-      
-      return true;
-    } catch (error) {
-      console.error('Error during token exchange:', error);
-      return false;
-    }
-  } else {
-    console.error('No code found in callback');
-    return false;
-  }
-}
-
-/**
- * Store tokens and expiration time
- * @param {Object} data - Token response data
- */
-function storeTokens(data) {
-  localStorage.setItem(ACCESS_TOKEN_KEY, data.access_token);
-  if (data.refresh_token) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
-  }
-  const expiresAt = Date.now() + (data.expires_in * 1000);
-  localStorage.setItem(EXPIRES_AT_KEY, expiresAt.toString());
 }
 
 /**
@@ -179,46 +102,7 @@ function isTokenExpired() {
 }
 
 /**
- * Refresh the access token
- * @returns {Promise<boolean>} Success status
- */
-async function refreshToken() {
-  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-  
-  if (!refreshToken) {
-    console.error('No refresh token available');
-    return false;
-  }
-  
-  try {
-    const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: clientId
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error('HTTP status ' + response.status);
-    }
-    
-    const data = await response.json();
-    storeTokens(data);
-    
-    return true;
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    return false;
-  }
-}
-
-/**
- * Check authentication status and refresh token if needed
+ * Check authentication status
  * @returns {Promise<boolean>} Authentication status
  */
 async function checkAuth() {
@@ -228,7 +112,9 @@ async function checkAuth() {
   }
   
   if (isTokenExpired()) {
-    return await refreshToken();
+    // For GitHub Pages with implicit grant, we need to re-authenticate
+    // as refresh tokens aren't available
+    return false;
   }
   
   try {
@@ -239,15 +125,7 @@ async function checkAuth() {
       }
     });
     
-    if (response.ok) {
-      return true;
-    } else if (response.status === 401) {
-      // Token is invalid, try to refresh
-      return await refreshToken();
-    } else {
-      console.error('Profile request failed:', response.status);
-      return false;
-    }
+    return response.ok;
   } catch (error) {
     console.error('Error checking auth:', error);
     return false;
@@ -259,9 +137,8 @@ async function checkAuth() {
  */
 function logout() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(EXPIRES_AT_KEY);
-  window.location.href = '/index.html';
+  window.location.href = '/spotify-ai-chatbot/index.html';
 }
 
 /**
@@ -282,15 +159,6 @@ async function getUserProfile() {
     });
     
     if (!response.ok) {
-      if (response.status === 401) {
-        // Token expired, try to refresh
-        const refreshed = await refreshToken();
-        if (refreshed) {
-          return getUserProfile();
-        } else {
-          throw new Error('Token refresh failed');
-        }
-      }
       throw new Error('HTTP status ' + response.status);
     }
     
@@ -304,10 +172,8 @@ async function getUserProfile() {
 // Export functions for use in other modules
 window.SpotifyAuth = {
   login,
-  handleCallback,
   checkAuth,
   getAccessToken,
-  refreshToken,
   logout,
   getUserProfile
 };
